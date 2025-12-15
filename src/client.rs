@@ -504,7 +504,14 @@ impl Client {
                             peer_nat_type = ph.nat_type();
                             is_local = ph.is_local();
                             signed_id_pk = ph.pk.into();
-                            relay_server = ph.relay_server;
+                            //relay_server = ph.relay_server;
+                            // 优先使用本地配置的中继服务器地址
+                            let local_relay_server = Config::get_option("relay-server");
+                            relay_server = if !local_relay_server.is_empty() {
+                                local_relay_server
+                            } else {
+                                ph.relay_server
+                            };
                             peer_addr = AddrMangle::decode(&ph.socket_addr);
                             feedback = ph.feedback;
                             let s = udp.0.take();
@@ -546,10 +553,18 @@ impl Client {
                             }
                         }
                         signed_id_pk = rr.pk().into();
+                        // 优先使用本地配置的中继服务器地址
+                        let local_relay_server = Config::get_option("relay-server");
+                        let relay_server_to_use = if !local_relay_server.is_empty() {
+                            local_relay_server
+                        } else {
+                            rr.relay_server
+                        };
                         let fut = Self::create_relay(
                             &peer,
                             rr.uuid,
-                            rr.relay_server,
+                            //rr.relay_server,
+                            relay_server_to_use,
                             &key,
                             conn_type,
                             my_addr.is_ipv4(),
